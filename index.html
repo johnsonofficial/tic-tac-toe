@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tic Tac Toe</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="game.js" defer></script>
+</head>
+<body>
+    <header>
+        <h1>Tic Tac Toe</h1>
+    </header>
+
+    <main>
+        <p id="turn-indicator">Turn: Player X</p>
+        <div class="gameboard">
+            <div class="gamecell" data-position="0"></div>
+            <div class="gamecell" data-position="1"></div>
+            <div class="gamecell" data-position="2"></div>
+            <div class="gamecell" data-position="3"></div>
+            <div class="gamecell" data-position="4"></div>
+            <div class="gamecell" data-position="5"></div>
+            <div class="gamecell" data-position="6"></div>
+            <div class="gamecell" data-position="7"></div>
+            <div class="gamecell" data-position="8"></div>
+        </div>
+        <button type="button">Reset</button>
+    </main>
+
+    <audio id="click-sound" src="gamesound.mp3" preload="auto"></audio>
+    <audio id="win-sound" src="win.mp3" preload="auto"></audio>
+    <audio id="game-over-sound" src="over.mp3" preload="auto"></audio>
+
+    <dialog class="names-dialog" open>
+        <form id="names-form">
+            <p class="title">Get Ready to Play!</p>
+            <p class="player-name">
+                <label for="name1">First Player's Name:</label>
+                <input type="text" name="name1" id="name1" maxlength="15" required>
+            </p>
+            <p class="player-name">
+                <label for="name2">Second Player's Name:</label>
+                <input type="text" name="name2" id="name2" maxlength="15" required>
+            </p>
+            <button type="submit">Start Game</button>
+        </form>
+    </dialog>
+
+    <dialog class="result-dialog">
+        <h1 id="winner-message">Player X Wins!</h1>
+        <button id="play-again-button" class="play-again-button">Play Again</button>
+    </dialog>
+
+    <footer>
+        <p>
+         Made by <a href="https://github.com/johsonraj" target="_blank">@johsonofficial</a>
+        </p>
+    </footer>
+
+    <!-- Add JavaScript directly here -->
+    <script>
+        // Select the audio elements
+        const clickSound = document.getElementById('click-sound');
+        const winSound = document.getElementById('win-sound');
+        const gameOverSound = document.getElementById('game-over-sound'); // Game Over sound
+
+        // Variables to track players and current turn
+        let currentPlayer = "X";
+        let player1Name = "Player X";
+        let player2Name = "Player O";
+
+        // Winning combinations
+        const winningCombinations = [
+            [0, 1, 2], // Top row
+            [3, 4, 5], // Middle row
+            [6, 7, 8], // Bottom row
+            [0, 3, 6], // Left column
+            [1, 4, 7], // Middle column
+            [2, 5, 8], // Right column
+            [0, 4, 8], // Diagonal top-left to bottom-right
+            [2, 4, 6], // Diagonal top-right to bottom-left
+        ];
+
+        // Function to check for a winner
+        function checkWinner() {
+            const gameCells = Array.from(document.querySelectorAll('.gamecell'));
+            for (const combination of winningCombinations) {
+                const [a, b, c] = combination;
+                if (
+                    gameCells[a].textContent &&
+                    gameCells[a].textContent === gameCells[b].textContent &&
+                    gameCells[a].textContent === gameCells[c].textContent
+                ) {
+                    return gameCells[a].textContent; // Return the winner ("X" or "O")
+                }
+            }
+            return null; // No winner yet
+        }
+
+        // Function to check for a tie
+        function checkTie() {
+            const gameCells = Array.from(document.querySelectorAll('.gamecell'));
+            return gameCells.every(cell => cell.textContent); // True if all cells are filled
+        }
+
+        // Play sound and place "X" or "O" on the gameboard
+        const gameCells = document.querySelectorAll('.gamecell');
+        gameCells.forEach((cell) => {
+            cell.addEventListener('click', () => {
+                if (!cell.textContent) { // Check if the cell is empty
+                    cell.textContent = currentPlayer; // Place the current player's symbol
+                    clickSound.currentTime = 0; // Reset sound to the beginning
+                    clickSound.play();
+
+                    // Check for a winner
+                    const winner = checkWinner();
+                    if (winner) {
+                        winSound.currentTime = 0; // Reset winning sound to the beginning
+                        winSound.play();
+                        const winnerName = winner === "X" ? player1Name : player2Name;
+                        document.getElementById('winner-message').textContent = `${winnerName} Wins!`;
+                        document.querySelector('.result-dialog').showModal();
+                        return;
+                    }
+
+                    // Check for a tie
+                    if (checkTie()) {
+                        gameOverSound.currentTime = 0; // Reset Game Over sound to the beginning
+                        gameOverSound.play();
+                        document.getElementById('winner-message').textContent = `Game Over! It's a Tie!`;
+                        document.querySelector('.result-dialog').showModal();
+                        return;
+                    }
+
+                    // Switch to the next player
+                    currentPlayer = currentPlayer === "X" ? "O" : "X";
+                    document.getElementById('turn-indicator').textContent = `Turn: ${currentPlayer === "X" ? player1Name : player2Name}`;
+                }
+            });
+        });
+
+        // Handle player names form submission
+        document.getElementById('names-form').addEventListener('submit', (event) => {
+            event.preventDefault(); // Prevent form submission
+            player1Name = document.getElementById('name1').value || "Player X";
+            player2Name = document.getElementById('name2').value || "Player O";
+            document.querySelector('.names-dialog').close(); // Close the names dialog
+            document.getElementById('turn-indicator').textContent = `Turn: ${player1Name}`;
+        });
+
+        // Reset button logic
+        document.querySelector('button[type="button"]').addEventListener('click', resetGame);
+
+        // Play Again button logic
+        document.getElementById('play-again-button').addEventListener('click', () => {
+            resetGame();
+            document.querySelector('.result-dialog').close(); // Close the result dialog
+        });
+
+        // Function to reset the game
+        function resetGame() {
+            gameCells.forEach((cell) => {
+                cell.textContent = ""; // Clear all cells
+            });
+            currentPlayer = "X"; // Reset to Player X
+            document.getElementById('turn-indicator').textContent = `Turn: ${player1Name}`;
+        }
+    </script>
+</body>
+</html>
